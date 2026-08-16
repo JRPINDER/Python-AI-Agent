@@ -8,7 +8,7 @@ schema_write_file = {
         "parameters": {
             "type": "object",
             "properties": {
-                "file_path": {
+                "filepath": {
                     "type": "string",
                     "description": "Directory path to file relative to the working directory",
                 },

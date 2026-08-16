@@ -4,6 +4,7 @@ import json
 
 from prompts import system_prompt
 
+from functions.call_function import available_functions, call_function
 from functions.get_files_info import schema_get_files_info, get_files_info
 from functions.write_file import schema_write_file, write_file
 from functions.get_file_content import schema_get_file_content, get_file_content
@@ -33,36 +34,39 @@ def main():
         {"role": "user", "content": args.user_prompt},
     ]
 
-    available_functions = [
-        schema_get_files_info,
-        schema_write_file,
-        schema_get_file_content,
-        schema_run_python_file
-    ]
-    
-    response = client.chat.completions.create(
-        model = "openrouter/free",
-        temperature = 0,
-        messages = messages,
-        tools=available_functions
-    )
 
-    if not response.usage:
-        raise RuntimeError("no response usage found")
+    for _ in range(20):
+        response = client.chat.completions.create(
+            model = "openrouter/free",
+            temperature = 0,
+            messages = messages,
+            tools=available_functions
+        )
 
-    message = response.choices[0].message
-    if message.tool_calls:
-        for tool_call in message.tool_calls:
-            function_args = json.loads(tool_call.function.arguments or "{}")
-            print(f"Calling function: {tool_call.function.name}({function_args})")
+        if not response.usage:
+            raise RuntimeError("no response usage found")
 
-    if args.verbose:
-        print(f"User prompt: {messages[0]["content"]}")
-        print(f"Prompt tokens: {response.usage.prompt_tokens}")
-        print(f"Response tokens: {response.usage.completion_tokens}")
-    print(f"Response: \n{response.choices[0].message.content}")
+        message = response.choices[0].message
+        messages.append(message)
 
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                result_message = call_function(tool_call, verbose=args.verbose)
+                if args.verbose:
+                    print(f"-> {result_message['content']}")
+                messages.append(result_message)
 
+        if not message.tool_calls:
+            print(f"Response: \n{response.choices[0].message.content}")
+            if args.verbose:
+                print(f"User prompt: {messages[0]["content"]}")
+                print(f"Prompt tokens: {response.usage.prompt_tokens}")
+                print(f"Response tokens: {response.usage.completion_tokens}")
+            break
+
+        if _ == 19:
+            print("Error: Max iterations reached without a final response.")
+            exit(1)
 
 if __name__ == "__main__":
     main()

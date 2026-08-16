@@ -5,11 +5,11 @@ schema_run_python_file = {
     "type": "function",
     "function": {
         "name": "run_python_file",
-        "description": "Executes a Python file in the specified directory with optional arguments",
+        "description": "runs a Python file in the specified directory with optional arguments. tests.py is an example of a Python file that can be run.",
         "parameters": {
             "type": "object",
             "properties": {
-                "file_path": {
+                "filepath": {
                     "type": "string",
                     "description": "Directory path to file relative to the working directory",
                 },
